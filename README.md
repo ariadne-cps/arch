@@ -1,7 +1,9 @@
 # Ariadne ARCH suite
 
 Experimental ARCH examples moved from `ariadne-cps/ariadne/examples/arch`
-without changing their C++ sources. They live in `suite/`.
+with the source files under `nln/suite/`. Their entry points now explicitly
+use the Drawing command-line interface instead of the removed
+`ariadne_main.hpp` wrapper.
 
 The build compiles seven executables: `ROBE25`, `CVDP23`, `LALO20`,
 `LOVO25`, `SPRE22`, `SUTR21`, and `arch_suite`. The additional
@@ -16,8 +18,8 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/ariadne/install
 cmake --build build --parallel
 ```
 
-The `suite/` folder can also be configured directly using
-`cmake -S suite -B build-suite -DCMAKE_PREFIX_PATH=/path/to/install`.
+The `nln/suite/` folder can also be configured directly using
+`cmake -S nln/suite -B build-suite -DCMAKE_PREFIX_PATH=/path/to/install`.
 Both modes use the shared `cmake/FindAriadne.cmake` and the installed
 `ariadne.hpp` umbrella header.
 

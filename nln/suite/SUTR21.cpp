@@ -1,7 +1,7 @@
 /***************************************************************************
- *            QUAD20.cpp
+ *            SUTR21.cpp
  *
- *  Copyright  2020  Luca Geretti
+ *  Copyright  2021  Luca Geretti
  *
  ****************************************************************************/
 
@@ -22,12 +22,13 @@
  *  along with Ariadne.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "QUAD20.hpp"
+#include "SUTR21.hpp"
+#include "drawing/drawing_command_line_interface.hpp"
 
-using namespace Ariadne;
-
-Int main(Int argc, const char* argv[])
+int main(int argc, const char* argv[])
 {
-    if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
-    QUAD20();
+    if (not Ariadne::DrawingCommandLineInterface().acquire(argc, argv)) return -1;
+
+    SUTR21();
+    return 0;
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *            CVDP23.cpp
+ *            SPRE22.cpp
  *
  *  Copyright  2025  Luca Geretti
  *
@@ -22,10 +22,13 @@
  *  along with Ariadne.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "CVDP23.hpp"
-#include "ariadne_main.hpp"
+#include "SPRE22.hpp"
+#include "drawing/drawing_command_line_interface.hpp"
 
-void ariadne_main()
+int main(int argc, const char* argv[])
 {
-    CVDP23();
+    if (not Ariadne::DrawingCommandLineInterface().acquire(argc, argv)) return -1;
+
+    SPRE22();
+    return 0;
 }

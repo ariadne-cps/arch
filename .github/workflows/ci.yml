@@ -1,4 +1,4 @@
-name: Build ARCH suite
+name: Compile NLN ARCH suite
 on:
   push:
     branches: [main]
@@ -34,9 +34,9 @@ jobs:
       - name: Install Ariadne
         shell: bash
         run: cmake --install build-ariadne --prefix "$GITHUB_WORKSPACE/install"
-      - name: Configure ARCH examples against installed Ariadne
+      - name: Configure NLN ARCH suite against installed Ariadne
         shell: bash
         run: cmake -S . -B build-suite -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/install"
-      - name: Compile suite (do not execute)
+      - name: Compile NLN suite (do not execute)
         shell: bash
         run: cmake --build build-suite --parallel 4

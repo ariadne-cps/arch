@@ -22,9 +22,12 @@
  */
 
 #include "LOVO25.hpp"
-#include "ariadne_main.hpp"
+#include "drawing/drawing_command_line_interface.hpp"
 
-void ariadne_main()
+int main(int argc, const char* argv[])
 {
+    if (not Ariadne::DrawingCommandLineInterface().acquire(argc, argv)) return -1;
+
     LOVO25();
+    return 0;
 }

@@ -1,7 +1,7 @@
 /***************************************************************************
- *            ROBE25.cpp
+ *            arch_suite.cpp
  *
- *  Copyright  2025  Luca Geretti
+ *  Copyright  2020  Luca Geretti
  *
  ****************************************************************************/
 
@@ -23,9 +23,20 @@
  */
 
 #include "ROBE25.hpp"
-#include "ariadne_main.hpp"
+#include "CVDP23.hpp"
+#include "LALO20.hpp"
+#include "LOVO25.hpp"
+#include "SPRE22.hpp"
+#include "drawing/drawing_command_line_interface.hpp"
 
-void ariadne_main()
+int main(int argc, const char* argv[])
 {
+    if (not Ariadne::DrawingCommandLineInterface().acquire(argc, argv)) return -1;
+
     ROBE25();
+    CVDP23();
+    LALO20();
+    LOVO25();
+    SPRE22();
+    return 0;
 }
