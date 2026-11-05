@@ -11,20 +11,22 @@ The build compiles seven executables: `ROBE25`, `CVDP23`, `LALO20`,
 does not provide its required `QUAD20.hpp`. The original CMake also omitted
 this program.
 
-## Standalone build against an installed Ariadne
+## Build Ariadne and the suite together
+
+The default build uses the pinned `ss/ard` submodule directly, without
+installing Ariadne or searching for a previously installed library:
 
 ```sh
-cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/ariadne/install
+git submodule update --init -- ss/ard
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF
 cmake --build build --parallel
 ```
 
-The `suite/nln/` folder can also be configured directly using
-`cmake -S suite/nln -B build-suite -DCMAKE_PREFIX_PATH=/path/to/install`.
-Both modes use the shared `cmake/FindAriadne.cmake` and the installed
-`ariadne.hpp` umbrella header.
+Each executable links the `ariadne` target produced in the same CMake
+build tree.
 
 ## CI
 
-Ubuntu, macOS and Windows build and install the pinned `ss/ard` submodule,
-then compile the suite against that installation. **The suite is not
+Ubuntu, macOS and Windows configure and compile Ariadne and the NLN suite
+in the same build tree, using sccache when available. **The suite is not
 executed in CI** because these are potentially expensive experiments.

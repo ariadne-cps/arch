@@ -46,21 +46,12 @@ jobs:
       - name: Initialize optional sccache before compilation
         shell: bash
         run: cmake -P ss/ard/ss/bui/cmake/InitializeSccache.cmake
-      - name: Configure Ariadne
+      - name: Configure Ariadne and NLN suite in one build tree
         shell: bash
-        run: cmake -S ss/ard -B build-ariadne -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF -DWARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER" -DCMAKE_CXX_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER"
-      - name: Build Ariadne
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF -DWARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER" -DCMAKE_CXX_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER"
+      - name: Compile Ariadne and NLN suite (do not execute)
         shell: bash
-        run: cmake --build build-ariadne --parallel 4 --target ariadne
-      - name: Install Ariadne
-        shell: bash
-        run: cmake --install build-ariadne --prefix "$GITHUB_WORKSPACE/install"
-      - name: Configure NLN ARCH suite against installed Ariadne
-        shell: bash
-        run: cmake -S . -B build-suite -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/install" -DCMAKE_C_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER" -DCMAKE_CXX_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER"
-      - name: Compile NLN suite (do not execute)
-        shell: bash
-        run: cmake --build build-suite --parallel 4
+        run: cmake --build build --parallel 4
       - name: sccache statistics
         if: always()
         shell: bash
