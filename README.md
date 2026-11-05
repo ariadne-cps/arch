@@ -1,20 +1,22 @@
-# Ariadne ARCH suite
+# Ariadne ARCH
 
-Experimental ARCH examples moved from `ariadne-cps/ariadne/examples/arch`
-with the source files under `suite/nln/`. Their entry points now explicitly
-use the Drawing command-line interface instead of the removed
-`ariadne_main.hpp` wrapper.
+[![Build](https://github.com/ariadne-cps/arch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ariadne-cps/arch/actions/workflows/ci.yml?query=branch%3Amain)
 
-The build compiles seven executables: `ROBE25`, `CVDP23`, `LALO20`,
-`LOVO25`, `SPRE22`, `SUTR21`, and `arch_suite`. The additional
-`QUAD20.cpp` is preserved, but cannot be compiled: the original repository
-does not provide its required `QUAD20.hpp`. The original CMake also omitted
-this program.
+C++ benchmark suite for the Ariadne framework, organized under `suite/nln/`.
+It contains the following executables:
 
-## Build Ariadne and the suite together
+- `ROBE25`
+- `CVDP23`
+- `LALO20`
+- `LOVO25`
+- `SPRE22`
+- `arch_suite`, which runs the five benchmarks above in sequence.
 
-The default build uses the pinned `ss/ard` submodule directly, without
-installing Ariadne or searching for a previously installed library:
+## Build
+
+The repository includes Ariadne as a Git submodule at `ss/ard`. Ariadne and
+the benchmark executables are compiled in the **same CMake build tree**,
+without installing Ariadne or finding an external installation.
 
 ```sh
 git submodule update --init -- ss/ard
@@ -22,11 +24,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF
 cmake --build build --parallel
 ```
 
-Each executable links the `ariadne` target produced in the same CMake
-build tree.
+## Continuous integration
 
-## CI
-
-Ubuntu, macOS and Windows configure and compile Ariadne and the NLN suite
-in the same build tree, using sccache when available. **The suite is not
-executed in CI** because these are potentially expensive experiments.
+GitHub Actions checks compilation on Ubuntu, macOS, and Windows, using
+`sccache` when available. The benchmarks are **not executed** in CI.
