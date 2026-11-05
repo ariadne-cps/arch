@@ -217,7 +217,7 @@ void LALO20() {
     }
 
     LOGGING_PRINTLN("Plotting...");
-    LabelledFigure fig(Axes2d({0<=TimeVariable()<=20,1.5<=x4<=5}));
+    LabelledFigure fig(Axes2d(0.0, TimeVariable(), 20.0, 1.5, x4, 5.0));
     fig << line_colour(0.0,0.0,0.0);
     fig << line_style(false);
     fig << fill_colour(1.0,0.75,0.5);

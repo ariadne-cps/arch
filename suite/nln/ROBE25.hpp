@@ -147,7 +147,7 @@ void ROBE25() {
     }
 
     LOGGING_PRINTLN("Plotting...");
-    LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0.9996<=s<=1.0004}));
+    LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.9996, s, 1.0004));
     fig << line_style(false);
     fig << fill_colour(black);
     fig.draw(reach2);

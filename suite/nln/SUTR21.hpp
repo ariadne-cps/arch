@@ -94,56 +94,56 @@ void SUTR21() {
 */
     LOGGING_PRINTLN("Plotting...");
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=SA<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, SA, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_SA";
         fig.write(ss.str().c_str());
     }
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=SI<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, SI, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_SI";
         fig.write(ss.str().c_str());
     }
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=A<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, A, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_A";
         fig.write(ss.str().c_str());
     }
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=I<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, I, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_I";
         fig.write(ss.str().c_str());
     }
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=RA<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, RA, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_RA";
         fig.write(ss.str().c_str());
     }
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=RI<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, RI, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_RI";
         fig.write(ss.str().c_str());
     }
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=D<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, D, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_D";
         fig.write(ss.str().c_str());
     }
     {
-        LabelledFigure fig(Axes2d({0<=TimeVariable()<=evolution_time,0<=AplusI<=1}));
+        LabelledFigure fig(Axes2d(0.0, TimeVariable(), ApproximateDouble(evolution_time), 0.0, AplusI, 1.0));
         fig.draw(orbit);
         std::stringstream ss;
         ss << benchmark.name() << "_t_AplusI";

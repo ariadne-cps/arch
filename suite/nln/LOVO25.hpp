@@ -127,6 +127,6 @@ void LOVO25()
     LOGGING_RUN_MUTED(auto circle_orbit = simulator.orbit(circle_initial,circle_time))
 
     LOGGING_PRINTLN("Drawing figure... ")
-    plot(benchmark.name().c_str(),Axes2d(0.6<=x<=1.4,0.6<=y<=1.4), orange, orbit, black, circle_orbit);
+    plot(benchmark.name().c_str(),Axes2d(0.6, x, 1.4, 0.6, y, 1.4), orange, orbit, black, circle_orbit);
     LOGGING_PRINTLN("File " << benchmark.name() << ".png written.")
 }

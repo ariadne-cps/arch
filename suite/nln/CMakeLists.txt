@@ -1,4 +1,4 @@
-# Also supports direct configuration: cmake -S nln/suite -B build-suite.
+# Also supports direct configuration: cmake -S suite/nln -B build-suite.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     cmake_minimum_required(VERSION 3.15)
     project(AriadneArchSuite LANGUAGES CXX)

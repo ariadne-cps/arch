@@ -39,7 +39,7 @@ void CVDP23()
     /*
     RealVariable x1("x1"), y1("y1"), x2("x2"), y2("y2"), b("b");
 
-    LabelledFigure fig(Axes2d(-2.5<=x1<=2.5,-4.05<=y1<=4.05));
+    LabelledFigure fig(Axes2d(-2.5, x1, 2.5, -4.05, y1, 4.05));
 
     LOGGING_PRINTLN("Coupled van der Pol Oscillator system:")
 
