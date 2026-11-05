@@ -17,6 +17,12 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-26, windows-2025]
     steps:
+      # Git's nested submodule storage exceeds the default Windows path limit.
+      # Match the existing Ariadne Windows workflows before checkout.
+      - name: Enable long paths in Git
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: git config --system core.longpaths true
       - uses: actions/checkout@v7
       - name: MSVC environment
         if: runner.os == 'Windows'
@@ -34,6 +40,9 @@ jobs:
           git -C ss/ard submodule update --init -- ss/bui
       - name: Set up sccache
         uses: mozilla-actions/sccache-action@v0.0.11
+        continue-on-error: true
+        with:
+          version: "v0.18.0"
       - name: Initialize optional sccache before compilation
         shell: bash
         run: cmake -P ss/ard/ss/bui/cmake/InitializeSccache.cmake
