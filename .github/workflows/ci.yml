@@ -1,4 +1,9 @@
 name: Compile NLN ARCH suite
+
+env:
+  SCCACHE_GHA_ENABLED: "true"
+  SCCACHE_IGNORE_SERVER_IO_ERROR: "1"
+  SCCACHE_CONF: ${{ github.workspace }}/ss/ard/ss/bui/cmake/sccache.toml
 on:
   push:
     branches: [main]
@@ -22,12 +27,19 @@ jobs:
       - name: Ninja on macOS
         if: runner.os == 'macOS'
         run: brew install ninja
-      - name: Initialize Ariadne submodule
+      - name: Initialize Ariadne and Build submodules
         shell: bash
-        run: git submodule update --init ss/ard
+        run: |
+          git submodule update --init -- ss/ard
+          git -C ss/ard submodule update --init -- ss/bui
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@v0.0.11
+      - name: Initialize optional sccache before compilation
+        shell: bash
+        run: cmake -P ss/ard/ss/bui/cmake/InitializeSccache.cmake
       - name: Configure Ariadne
         shell: bash
-        run: cmake -S ss/ard -B build-ariadne -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF -DWARNINGS_AS_ERRORS=ON
+        run: cmake -S ss/ard -B build-ariadne -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF -DWARNINGS_AS_ERRORS=ON -DCMAKE_C_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER" -DCMAKE_CXX_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER"
       - name: Build Ariadne
         shell: bash
         run: cmake --build build-ariadne --parallel 4 --target ariadne
@@ -36,7 +48,14 @@ jobs:
         run: cmake --install build-ariadne --prefix "$GITHUB_WORKSPACE/install"
       - name: Configure NLN ARCH suite against installed Ariadne
         shell: bash
-        run: cmake -S . -B build-suite -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/install"
+        run: cmake -S . -B build-suite -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/install" -DCMAKE_C_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER" -DCMAKE_CXX_COMPILER_LAUNCHER="$SCCACHE_LAUNCHER"
       - name: Compile NLN suite (do not execute)
         shell: bash
         run: cmake --build build-suite --parallel 4
+      - name: sccache statistics
+        if: always()
+        shell: bash
+        run: |
+          if command -v sccache >/dev/null 2>&1; then
+            sccache --show-stats || true
+          fi

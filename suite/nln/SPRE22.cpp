@@ -29,6 +29,6 @@ int main(int argc, const char* argv[])
 {
     if (not Ariadne::DrawingCommandLineInterface().acquire(argc, argv)) return -1;
 
-    SPRE22();
+    Ariadne::SPRE22();
     return 0;
 }
