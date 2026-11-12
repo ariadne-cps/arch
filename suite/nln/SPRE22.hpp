@@ -131,9 +131,9 @@ void SPRE22()
     // The default unit grid would partition the 50-unit position ranges and
     // 5-unit velocity ranges into billions of cells at fineness 4.
     // Normalize the grid to the physical scales of this benchmark while
-    // keeping fineness 4 (cell widths: t/x/y = 12.5, vx/vy = 1.25).
+    // keeping fineness 4 (cell widths: t = 0.25, x/y = 12.5, vx/vy = 1.25).
     RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
-    analyser.configuration().set_scaling(t,200.0);
+    analyser.configuration().set_scaling(t,4.0);
     analyser.configuration().set_scaling(x,200.0);
     analyser.configuration().set_scaling(y,200.0);
     analyser.configuration().set_scaling(vx,20.0);
