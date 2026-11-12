@@ -104,10 +104,6 @@ void SPRE22()
 {
     ArchBenchmark benchmark("SPRE20");
     auto instance = benchmark.create_instance();
-    instance.write();
-
-    // Results can't be obtained in a reasonable time yet for this benchmark.
-    return;
 
     auto problem = make_space_rendezvous_problem();
 
@@ -116,10 +112,6 @@ void SPRE22()
     HybridConstraintSet safe_set = problem.safe_set;
 
     LOGGING_PRINTLN("Space Rendezvous system:");
-
-    DiscreteLocation initial_location = initial_set.location();
-    RealSpace initial_space = system.state_space()[initial_location];
-    BoundedConstraintSet initial_constraint_set = initial_set.euclidean_set(initial_location,initial_space);
 
     StepMaximumError max_err=8e-6;
     TaylorSeriesIntegrator integrator(max_err,Order(3u));
@@ -133,9 +125,12 @@ void SPRE22()
 
     Stopwatch<Milliseconds> sw;
 
-    LOGGING_PRINTLN("Computing orbit...");
+    HybridReachabilityAnalyser analyser(evolver);
+    analyser.configuration().set_maximum_grid_fineness(4);
+
+    LOGGING_PRINTLN("Computing upper reachability...");
     HybridTime evolution_time(200,3);
-    auto orbit=evolver.orbit(initial_set,evolution_time,Semantics::UPPER);
+    auto reach_set = analyser.upper_reach(initial_set,evolution_time);
 
     StringVariable spacecraft("spacecraft");
     StringConstant approaching("approaching");
@@ -144,14 +139,14 @@ void SPRE22()
 
     LOGGING_PRINTLN("Checking properties...");
     Nat num_ce = 0;
-    for (auto reach : orbit.reach()) {
-        auto reach_box = HybridExactBox(reach.location(),reach.state_space(),cast_exact_box(reach.bounding_box().euclidean_set()));
-        if (reach.location() == DiscreteLocation(spacecraft|rendezvous) and not(definitely(safe_set.covers(reach_box)))) {
-            LOGGING_PRINTLN_AT(1,"Found counterexample in location " << reach.location() << " with bounding box " << reach_box << ", unsafe");
+    for (const auto& cell : reach_set) {
+        auto reach_box = cell.box();
+        if (cell.location() == DiscreteLocation(spacecraft|rendezvous) and not(definitely(safe_set.covers(reach_box)))) {
+            LOGGING_PRINTLN_AT(1,"Found counterexample in location " << cell.location() << " with bounding box " << reach_box << ", unsafe");
             ++num_ce;
         }
-        if (reach.location() == DiscreteLocation(spacecraft|aborting) and not(definitely(safe_set.separated(reach_box)))) {
-            LOGGING_PRINTLN_AT(1,"Found counterexample in location " << reach.location() << " with bounding box " << reach_box << ", unsafe");
+        if (cell.location() == DiscreteLocation(spacecraft|aborting) and not(definitely(safe_set.separated(reach_box)))) {
+            LOGGING_PRINTLN_AT(1,"Found counterexample in location " << cell.location() << " with bounding box " << reach_box << ", unsafe");
             ++num_ce;
         }
     }
@@ -160,10 +155,14 @@ void SPRE22()
     sw.click();
     LOGGING_PRINTLN("Done in " << sw.elapsed_seconds() << " seconds.");
 
+    instance.set_execution_time(sw.elapsed_seconds());
+    instance.write();
+
     RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
 
     LOGGING_PRINTLN("Plotting...");
-    plot("SPRE20",{-1000<=x<=200,-450<=y<=0},Colour(1.0,0.75,0.5),orbit.reach());
+    HybridAugmentedPavingDrawable reach_drawable(reach_set);
+    plot("SPRE20",{-1000<=x<=200,-450<=y<=0},Colour(1.0,0.75,0.5),reach_drawable);
     LOGGING_PRINTLN("File SPRE20.png written.");
 }
 
