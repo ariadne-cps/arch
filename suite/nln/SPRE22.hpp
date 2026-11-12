@@ -128,6 +128,17 @@ void SPRE22()
     HybridReachabilityAnalyser analyser(evolver);
     analyser.configuration().set_maximum_grid_fineness(4);
 
+    // The default unit grid would partition the 50-unit position ranges and
+    // 5-unit velocity ranges into billions of cells at fineness 4.
+    // Normalize the grid to the physical scales of this benchmark while
+    // keeping fineness 4 (cell widths: t/x/y = 12.5, vx/vy = 1.25).
+    RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
+    analyser.configuration().set_scaling(t,200.0);
+    analyser.configuration().set_scaling(x,200.0);
+    analyser.configuration().set_scaling(y,200.0);
+    analyser.configuration().set_scaling(vx,20.0);
+    analyser.configuration().set_scaling(vy,20.0);
+
     LOGGING_PRINTLN("Computing upper reachability...");
     HybridTime evolution_time(200,3);
     auto reach_set = analyser.upper_reach(initial_set,evolution_time);
@@ -157,8 +168,6 @@ void SPRE22()
 
     instance.set_execution_time(sw.elapsed_seconds());
     instance.write();
-
-    RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
 
     LOGGING_PRINTLN("Plotting...");
     HybridAugmentedPavingDrawable reach_drawable(reach_set);
