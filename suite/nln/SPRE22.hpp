@@ -25,6 +25,7 @@
 #include "ariadne.hpp"
 #include "utility/stopwatch.hpp"
 #include "arch.hpp"
+#include "paving/paver.hpp"
 
 namespace Ariadne {
 
@@ -103,6 +104,29 @@ decltype(auto) make_space_rendezvous_problem() {
     return make_problem(initial_set,space_rendezvous,safe_set);
 }
 
+// Use subdivision-based outer approximation for enclosures created by
+// HybridReachabilityAnalyser, including copies of the evolver used in parallel.
+class SubdivisionHybridEvolver : public GeneralHybridEvolver {
+  public:
+    using GeneralHybridEvolver::GeneralHybridEvolver;
+
+    SubdivisionHybridEvolver* clone() const override {
+        return new SubdivisionHybridEvolver(*this);
+    }
+
+    HybridEnclosure enclosure(const HybridExactBox& box) const override {
+        EnclosureConfiguration config(this->function_factory());
+        config.set_paver(Paver(new SubdivisionPaver()));
+
+        HybridEnclosure result(box, config);
+        const auto location = box.location();
+        const auto auxiliary_space = this->system().continuous_auxiliary_space(location);
+        result.set_auxiliary(auxiliary_space.variables(),
+                             this->system().auxiliary_function(location));
+        return result;
+    }
+};
+
 void SPRE22()
 {
     ArchBenchmark benchmark("SPRE20");
@@ -119,7 +143,7 @@ void SPRE22()
     StepMaximumError max_err=8e-6;
     TaylorSeriesIntegrator integrator(max_err,Order(3u));
 
-    GeneralHybridEvolver evolver(system);
+    SubdivisionHybridEvolver evolver(system);
     evolver.set_integrator(integrator);
     evolver.configuration().set_maximum_enclosure_radius(12.0);
     evolver.configuration().set_maximum_step_size(1.0);
