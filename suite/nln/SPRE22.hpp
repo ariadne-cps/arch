@@ -128,12 +128,10 @@ void SPRE22()
     HybridReachabilityAnalyser analyser(evolver);
     analyser.configuration().set_maximum_grid_fineness(4);
 
-    // The default unit grid would partition the 50-unit position ranges and
-    // 5-unit velocity ranges into billions of cells at fineness 4.
-    // Normalize the grid to the physical scales of this benchmark while
-    // keeping fineness 4 (cell widths: t = 0.25, x/y = 12.5, vx/vy = 1.25).
-    RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
-    analyser.configuration().set_scaling(t,4.0);
+    // Scale only the physical position and velocity variables.
+    // The model currently defines t as a state clock (dot(t)=1), so t is
+    // still part of the grid until the time-dependent guards are redesigned.
+    RealVariable x("x"), y("y"), vx("vx"), vy("vy");
     analyser.configuration().set_scaling(x,200.0);
     analyser.configuration().set_scaling(y,200.0);
     analyser.configuration().set_scaling(vx,20.0);
