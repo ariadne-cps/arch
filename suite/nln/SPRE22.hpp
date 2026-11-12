@@ -66,7 +66,10 @@ decltype(auto) make_space_rendezvous_problem() {
 
     HybridAutomaton space_rendezvous("space_rendezvous");
 
-    HybridBoundedConstraintSet initial_set(spacecraft|approaching,{t==0,-925<=x<=-875,-425<=y<=-375,0<=vx<=5,0<=vy<=5});
+    // All initial constraints are independent interval bounds. Using a box
+    // avoids the generic constrained-set paver and its expensive solver recursion.
+    HybridBoxSet initial_set(spacecraft|approaching,
+                             RealVariablesBox({0<=t<=0,-925<=x<=-875,-425<=y<=-375,0<=vx<=5,0<=vy<=5}));
 
     HybridConstraintSet safe_set;
     safe_set.adjoin(spacecraft|rendezvous,{y>=x*tan(Ariadne::pi/6u),-y>=x*tan(Ariadne::pi/6u),sqrt(sqr(vx)+sqr(vy))<=3.3_dec});
