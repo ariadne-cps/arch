@@ -26,6 +26,8 @@
 #include "utility/stopwatch.hpp"
 #include "arch.hpp"
 #include "paving/paver.hpp"
+#include "paving/paving_interface.hpp"
+#include "set/function_set.hpp"
 
 namespace Ariadne {
 
@@ -104,19 +106,31 @@ decltype(auto) make_space_rendezvous_problem() {
     return make_problem(initial_set,space_rendezvous,safe_set);
 }
 
-// Use subdivision-based outer approximation for enclosures created by
-// HybridReachabilityAnalyser, including copies of the evolver used in parallel.
-class SubdivisionHybridEvolver : public GeneralHybridEvolver {
+// A conservative outer paver that computes interval bounds without
+// constraint solving or recursive subdivision of enclosure parameters.
+class BoxPaver : public PaverInterface {
+  public:
+    Void adjoin_outer_approximation(PavingInterface& paving, const SetType& set, Nat fineness) const override {
+        paving.adjoin_outer_approximation(set.bounding_box(), fineness);
+    }
+
+    OutputStream& _write(OutputStream& os) const override {
+        return os << "BoxPaver()";
+    }
+};
+
+// Use the box-based paver also in enclosures created by cloned evolvers.
+class BoxHybridEvolver : public GeneralHybridEvolver {
   public:
     using GeneralHybridEvolver::GeneralHybridEvolver;
 
-    SubdivisionHybridEvolver* clone() const override {
-        return new SubdivisionHybridEvolver(*this);
+    BoxHybridEvolver* clone() const override {
+        return new BoxHybridEvolver(*this);
     }
 
     HybridEnclosure enclosure(const HybridExactBox& box) const override {
         EnclosureConfiguration config(this->function_factory());
-        config.set_paver(Paver(new SubdivisionPaver()));
+        config.set_paver(Paver(new BoxPaver()));
 
         HybridEnclosure result(box, config);
         const auto location = box.location();
@@ -143,7 +157,7 @@ void SPRE22()
     StepMaximumError max_err=8e-6;
     TaylorSeriesIntegrator integrator(max_err,Order(3u));
 
-    SubdivisionHybridEvolver evolver(system);
+    BoxHybridEvolver evolver(system);
     evolver.set_integrator(integrator);
     evolver.configuration().set_maximum_enclosure_radius(12.0);
     evolver.configuration().set_maximum_step_size(1.0);
