@@ -119,28 +119,6 @@ class BoxPaver : public PaverInterface {
     }
 };
 
-// Use the box-based paver also in enclosures created by cloned evolvers.
-class BoxHybridEvolver : public GeneralHybridEvolver {
-  public:
-    using GeneralHybridEvolver::GeneralHybridEvolver;
-
-    BoxHybridEvolver* clone() const override {
-        return new BoxHybridEvolver(*this);
-    }
-
-    HybridEnclosure enclosure(const HybridExactBox& box) const override {
-        EnclosureConfiguration config(this->function_factory());
-        config.set_paver(Paver(new BoxPaver()));
-
-        HybridEnclosure result(box, config);
-        const auto location = box.location();
-        const auto auxiliary_space = this->system().continuous_auxiliary_space(location);
-        result.set_auxiliary(auxiliary_space.variables(),
-                             this->system().auxiliary_function(location));
-        return result;
-    }
-};
-
 void SPRE22()
 {
     ArchBenchmark benchmark("SPRE20");
@@ -157,7 +135,7 @@ void SPRE22()
     StepMaximumError max_err=8e-6;
     TaylorSeriesIntegrator integrator(max_err,Order(3u));
 
-    BoxHybridEvolver evolver(system);
+    GeneralHybridEvolver evolver(system);
     evolver.set_integrator(integrator);
     evolver.configuration().set_maximum_enclosure_radius(12.0);
     evolver.configuration().set_maximum_step_size(1.0);
@@ -167,6 +145,7 @@ void SPRE22()
     Stopwatch<Milliseconds> sw;
 
     HybridReachabilityAnalyser analyser(evolver);
+    analyser.configuration().set_paver(Paver(new BoxPaver()));
     analyser.configuration().set_maximum_grid_fineness(4);
 
     // Scale only the physical position and velocity variables.
