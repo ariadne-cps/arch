@@ -25,9 +25,6 @@
 #include "ariadne.hpp"
 #include "utility/stopwatch.hpp"
 #include "arch.hpp"
-#include "paving/paver.hpp"
-#include "paving/paving_interface.hpp"
-#include "set/function_set.hpp"
 
 namespace Ariadne {
 
@@ -69,8 +66,7 @@ decltype(auto) make_space_rendezvous_problem() {
 
     HybridAutomaton space_rendezvous("space_rendezvous");
 
-    // All initial constraints are independent interval bounds. Using a box
-    // avoids the generic constrained-set paver and its expensive solver recursion.
+    // All initial constraints are independent interval bounds.
     HybridBoxSet initial_set(spacecraft|approaching,
                              RealVariablesBox({0<=t<=0,-925<=x<=-875,-425<=y<=-375,0<=vx<=5,0<=vy<=5}));
 
@@ -106,19 +102,6 @@ decltype(auto) make_space_rendezvous_problem() {
     return make_problem(initial_set,space_rendezvous,safe_set);
 }
 
-// A conservative outer paver that computes interval bounds without
-// constraint solving or recursive subdivision of enclosure parameters.
-class BoxPaver : public PaverInterface {
-  public:
-    Void adjoin_outer_approximation(PavingInterface& paving, const SetType& set, Nat fineness) const override {
-        paving.adjoin_outer_approximation(set.bounding_box(), fineness);
-    }
-
-    OutputStream& _write(OutputStream& os) const override {
-        return os << "BoxPaver()";
-    }
-};
-
 void SPRE22()
 {
     ArchBenchmark benchmark("SPRE20");
@@ -145,7 +128,6 @@ void SPRE22()
     Stopwatch<Milliseconds> sw;
 
     HybridReachabilityAnalyser analyser(evolver);
-    analyser.configuration().set_paver(Paver(new BoxPaver()));
     analyser.configuration().set_maximum_grid_fineness(4);
 
     // Scale only the physical position and velocity variables.
