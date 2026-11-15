@@ -130,6 +130,12 @@ void SPRE22()
     evolver.configuration().set_maximum_step_size(1.0);
     evolver.configuration().set_maximum_spacial_error(1e-3);
     evolver.configuration().set_enable_subdivisions(true);
+    // Finish the source trajectory before evolving discrete successors.
+    // Merge all compatible siblings into one enclosure per transition family;
+    // do not restrict the merge radius, since the evolver can split again.
+    evolver.set_evolution_backend_factory(TreeHybridEvolutionBackendFactory(
+        AllCompatibleSiblingRecombinationSchedulingPolicy{},
+        OnParentCompletionRecombinationTriggerPolicy{}));
 
     Stopwatch<Milliseconds> sw;
 
