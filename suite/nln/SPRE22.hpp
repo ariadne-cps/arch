@@ -111,7 +111,7 @@ Nat check_space_rendezvous_properties(const HybridOrbit& orbit, const HybridCons
     StringConstant aborting("aborting");
 
     RealVariable x("x"), y("y");
-    const ExactIntervalType abort_keepout(-0.2_x, 0.2_x);
+    const ExactIntervalType abort_keepout(-1, 1);
     Nat num_possible_violations = 0;
     for (const auto& reach : orbit.reach()) {
         auto reach_box = HybridExactBox(reach.location(),reach.state_space(),cast_exact_box(reach.bounding_box().euclidean_set()));
