@@ -134,8 +134,8 @@ void SPRE22()
     // Merge all compatible siblings into one enclosure per transition family;
     // do not restrict the merge radius, since the evolver can split again.
     evolver.set_evolution_backend_factory(TreeHybridEvolutionBackendFactory(
-        AllCompatibleSiblingRecombinationSchedulingPolicy{},
-        OnParentCompletionRecombinationTriggerPolicy{}));
+        ParentCheckpointAdmissionPolicy{},
+        AllCompatibleRecombinationPolicy(HybridRecombinationScope::SIBLINGS)));
 
     Stopwatch<Milliseconds> sw;
 
