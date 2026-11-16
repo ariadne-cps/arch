@@ -70,7 +70,8 @@ decltype(auto) make_space_rendezvous_problem() {
 
     HybridConstraintSet safe_set;
     safe_set.adjoin(spacecraft|rendezvous,{y>=x*tan(Ariadne::pi/6u),-y>=x*tan(Ariadne::pi/6u),sqrt(sqr(vx)+sqr(vy))<=3.3_dec});
-    safe_set.adjoin(spacecraft|aborting,{x<=-0.2_dec,x>=0.2_dec,y<=-0.2_dec,y>=0.2_dec});
+    // In aborting, safety means staying outside the rendezvous keep-out box.
+    // That disjunctive condition is checked directly on reach boxes below.
 
     auto rc_dyn = sqrt(sqr(r+x)+sqr(y));
     auto t_dyn = 1;
@@ -151,24 +152,36 @@ void SPRE22()
     StringConstant aborting("aborting");
 
     LOGGING_PRINTLN("Checking properties...");
-    Nat num_ce = 0;
-    for (auto reach : orbit.reach()) {
+    RealVariable x("x"), y("y");
+    const ExactIntervalType abort_keepout(-0.2_x, 0.2_x);
+    Nat num_possible_violations = 0;
+    for (const auto& reach : orbit.reach()) {
         auto reach_box = HybridExactBox(reach.location(),reach.state_space(),cast_exact_box(reach.bounding_box().euclidean_set()));
         if (reach.location() == DiscreteLocation(spacecraft|rendezvous) and not(definitely(safe_set.covers(reach_box)))) {
-            LOGGING_PRINTLN_AT(1,"Found counterexample in location " << reach.location() << " with bounding box " << reach_box << ", unsafe");
-            ++num_ce;
+            LOGGING_PRINTLN_AT(1,"Possible safety violation in location " << reach.location() << " with bounding box " << reach_box);
+            ++num_possible_violations;
         }
-        if (reach.location() == DiscreteLocation(spacecraft|aborting) and not(definitely(safe_set.separated(reach_box)))) {
-            LOGGING_PRINTLN_AT(1,"Found counterexample in location " << reach.location() << " with bounding box " << reach_box << ", unsafe");
-            ++num_ce;
+        if (reach.location() == DiscreteLocation(spacecraft|aborting)) {
+            // Abort is unsafe only if both position coordinates can lie in the
+            // keep-out region. Interval separation avoids the costly general
+            // constraint solver for each of the (potentially many) reach boxes.
+            const auto& bounds = reach_box.euclidean_set();
+            const auto& space = reach_box.space();
+            const Bool outside_keepout =
+                definitely(disjoint(bounds[space.index(x)], abort_keepout)) or
+                definitely(disjoint(bounds[space.index(y)], abort_keepout));
+            if (not outside_keepout) {
+                LOGGING_PRINTLN_AT(1,"Possible safety violation in location " << reach.location() << " with bounding box " << reach_box);
+                ++num_possible_violations;
+            }
         }
     }
-    if (num_ce>0) LOGGING_PRINTLN("Number of counterexamples: " << num_ce);
+    if (num_possible_violations>0) LOGGING_PRINTLN("Number of possible safety violations: " << num_possible_violations);
 
     sw.click();
     LOGGING_PRINTLN("Done in " << sw.elapsed_seconds() << " seconds.");
 
-    RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
+    RealVariable t("t"), vx("vx"), vy("vy");
 
     LOGGING_PRINTLN("Plotting...");
     plot("SPRE20",{-1000<=x<=200,-450<=y<=0},Colour(1.0,0.75,0.5),orbit.reach());
