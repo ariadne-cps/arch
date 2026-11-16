@@ -14,15 +14,19 @@ It contains the following executables:
 
 ## Build
 
-The repository includes Ariadne as a Git submodule at `ss/ard`. Ariadne and
+The repository includes Ariadne as a Git submodule at `ss/ari`. Ariadne and
 the benchmark executables are compiled in the **same CMake build tree**,
-without installing Ariadne or finding an external installation.
+without installing Ariadne or finding an external installation. CMake
+initializes `ss/ari` as needed, synchronizes on changed recorded Gitlinks,
+and preserves intentional local checkouts otherwise.
 
 ```sh
-git submodule update --init -- ss/ard
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_BINDINGS=OFF
 cmake --build build --parallel
 ```
+
+When updating an existing clone, the former `ss/ard` checkout may remain as
+an obsolete local directory; review local changes before removing it.
 
 ## Continuous integration
 

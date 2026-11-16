@@ -4,5 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Compile Ariadne and ARCH in one CMake build tree; no external installation.
 option(BUILD_PYTHON_BINDINGS "Build optional Ariadne Python bindings" OFF)
-add_subdirectory(ss/ard)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/BootstrapAriadne.cmake")
+ariadne_bootstrap_checkout()
+add_subdirectory(ss/ari)
 add_subdirectory(suite/nln)
