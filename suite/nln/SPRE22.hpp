@@ -129,10 +129,15 @@ void SPRE22()
     evolver.configuration().set_maximum_spacial_error(1e-3);
     evolver.configuration().set_enable_subdivisions(true);
     
+    const Scalings recombination_scales(
+        1.0_x, {{RealVariable("x"), 12.0_x}, {RealVariable("y"), 12.0_x}});
     evolver.set_evolution_backend_factory(
-    TreeHybridEvolutionBackendFactory(
-        LocationCheckpointAdmissionPolicy{},
-        AllCompatibleRecombinationPolicy{}));
+        TreeHybridEvolutionBackendFactory(
+            LocationCheckpointAdmissionPolicy{},
+            ProximityRecombinationPolicy(1.0, 8u, 12.0, recombination_scales),
+            EveryNStepsRecombinationTriggerPolicy(128u),
+            ReferenceEnclosureRecombiner{},
+            EnclosureRecombinationContext(12.0_x)));
 
     Stopwatch<Milliseconds> sw;
 
