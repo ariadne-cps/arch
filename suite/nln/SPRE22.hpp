@@ -102,12 +102,9 @@ decltype(auto) make_space_rendezvous_problem() {
 
 void SPRE22()
 {
-    ArchBenchmark benchmark("SPRE20");
+    ArchBenchmark benchmark("SPRE22");
     auto instance = benchmark.create_instance();
     instance.write();
-
-    // Results can't be obtained in a reasonable time yet for this benchmark.
-    return;
 
     auto problem = make_space_rendezvous_problem();
 
@@ -122,7 +119,8 @@ void SPRE22()
     BoundedConstraintSet initial_constraint_set = initial_set.euclidean_set(initial_location,initial_space);
 
     StepMaximumError max_err=8e-6;
-    TaylorSeriesIntegrator integrator(max_err,Order(3u));
+    //TaylorSeriesIntegrator integrator(max_err,Order(3u));
+    GradedTaylorSeriesIntegrator integrator(max_err);
 
     GeneralHybridEvolver evolver(system);
     evolver.set_integrator(integrator);
@@ -130,12 +128,11 @@ void SPRE22()
     evolver.configuration().set_maximum_step_size(1.0);
     evolver.configuration().set_maximum_spacial_error(1e-3);
     evolver.configuration().set_enable_subdivisions(true);
-    // Finish the source trajectory before evolving discrete successors.
-    // Merge all compatible siblings into one enclosure per transition family;
-    // do not restrict the merge radius, since the evolver can split again.
-    evolver.set_evolution_backend_factory(TreeHybridEvolutionBackendFactory(
-        ParentCheckpointAdmissionPolicy{},
-        AllCompatibleRecombinationPolicy(HybridRecombinationScope::SIBLINGS)));
+    
+    evolver.set_evolution_backend_factory(
+    TreeHybridEvolutionBackendFactory(
+        LocationCheckpointAdmissionPolicy{},
+        AllCompatibleRecombinationPolicy{}));
 
     Stopwatch<Milliseconds> sw;
 
