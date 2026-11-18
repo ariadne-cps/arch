@@ -155,7 +155,7 @@ void SPRE22()
     RealSpace initial_space = system.state_space()[initial_location];
     BoundedConstraintSet initial_constraint_set = initial_set.euclidean_set(initial_location,initial_space);
 
-    StepMaximumError max_err=8e-6;
+    StepMaximumError max_err=8e-5;
     //TaylorSeriesIntegrator integrator(max_err,Order(3u));
     GradedTaylorSeriesIntegrator integrator(max_err);
 
@@ -163,7 +163,7 @@ void SPRE22()
     evolver.set_integrator(integrator);
     evolver.configuration().set_maximum_enclosure_radius(12.0);
     evolver.configuration().set_maximum_step_size(1.0);
-    evolver.configuration().set_maximum_spacial_error(1e-3);
+    evolver.configuration().set_maximum_spacial_error(1e-2);
     evolver.configuration().set_enable_subdivisions(true);
     
     const Scalings recombination_scales(
@@ -171,8 +171,8 @@ void SPRE22()
     evolver.set_evolution_backend_factory(
         TreeHybridEvolutionBackendFactory(
             LocationCheckpointAdmissionPolicy{},
-            ProximityRecombinationPolicy(1.0, 8u, 12.0, recombination_scales),
-            EveryNStepsRecombinationTriggerPolicy(128u),
+            ProximityRecombinationPolicy(12.0, 512u, 12.0, recombination_scales),
+            EveryNStepsRecombinationTriggerPolicy(512u),
             ReferenceEnclosureRecombiner{},
             EnclosureRecombinationContext(12.0_x)));
 
@@ -193,9 +193,9 @@ void SPRE22()
 
     LOGGING_PRINTLN("Plotting...");
     Stopwatch<Milliseconds> plotting_sw;
-    plot("SPRE20",{-1000<=x<=200,-450<=y<=0},Colour(1.0,0.75,0.5),orbit.reach());
+    plot("SPRE22",{-1000<=x<=200,-450<=y<=0},Colour(1.0,0.75,0.5),orbit.reach());
     plotting_sw.click();
-    LOGGING_PRINTLN("File SPRE20.png written.");
+    LOGGING_PRINTLN("File SPRE22.png written.");
     LOGGING_PRINTLN("Plotting done in " << plotting_sw.elapsed_seconds() << " seconds.");
 }
 
