@@ -15,8 +15,10 @@ endforeach()
 
 # Capture-mode SPRE22 emits its generated header in the build root, not the
 # source tree. Replay is offered only once the snapshot exists.
-target_compile_definitions(SPRE22 PRIVATE
+foreach(target IN ITEMS SPRE22 arch_suite)
+    target_compile_definitions(${target} PRIVATE
     SPRE22_CAPTURE_HEADER_PATH=\"${CMAKE_BINARY_DIR}/spre22_plot_data.generated.hpp\")
+endforeach()
 
 if(EXISTS "${CMAKE_BINARY_DIR}/spre22_plot_data.generated.hpp")
     add_executable(SPRE22_plot_replay SPRE22_plot_replay.cpp)

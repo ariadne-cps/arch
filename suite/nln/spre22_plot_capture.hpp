@@ -60,9 +60,9 @@ inline void write_domain(std::ostream& out, const ExactBoxType& domain) {
     for (SizeType i = 0; i != domain.size(); ++i) {
         if (i != 0u) out << ", ";
         out << "ExactIntervalType(";
-        write_dyadic(out, domain[i].lower_bound());
+        write_float(out, domain[i].lower_bound());
         out << ", ";
-        write_dyadic(out, domain[i].upper_bound());
+        write_float(out, domain[i].upper_bound());
         out << ")";
     }
     out << "}";
