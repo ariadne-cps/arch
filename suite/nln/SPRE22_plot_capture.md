@@ -50,3 +50,31 @@ legacy record.
 
 The binary format is not designed to load untrusted input and cannot reproduce
 issues occurring in `HybridEnclosure` copies before the drawer.
+
+## Isolate a stalled drawing batch without recapturing
+
+The trace line `SPRE22 replay: drawing [11520,11776)` means the worker
+computation has not completed; it does **not** identify which enclosure is slow.
+To replay just that range from the existing multi-gigabyte snapshot, without
+deserializing earlier records:
+
+```sh
+SPRE22_REPLAY_FIRST=11520 SPRE22_REPLAY_COUNT=256 SPRE22_REPLAY_TRACE=1 ./build-release/suite/nln/SPRE22_plot_replay -c max
+```
+
+Trace entries `SPRE22 draw BEGIN <original-index>` and `SPRE22 draw END
+<original-index> (<seconds> s)` are emitted under a mutex. A BEGIN without
+its matching END identifies a task still running, but by itself does not
+distinguish an expensive computation from a deadlock. For precise isolation
+replay serially one enclosure per batch:
+
+```sh
+SPRE22_REPLAY_FIRST=11520 SPRE22_REPLAY_COUNT=256 SPRE22_REPLAY_BATCH_SIZE=1 SPRE22_REPLAY_TRACE=1 ./build-release/suite/nln/SPRE22_plot_replay -c 0
+```
+
+These are replay-only environment variables; capture selection still uses
+`SPRE22_PLOT_FIRST` and `SPRE22_PLOT_COUNT`. The default batch size and
+behaviour remain unchanged when no replay variables are provided.
+The replay reader skips uninterested records using their length prefixes,
+without loading their Taylor models, and the original binary file is never
+modified.

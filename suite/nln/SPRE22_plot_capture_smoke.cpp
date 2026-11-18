@@ -70,5 +70,16 @@ int main(int argc, const char* argv[]) {
     if (!old_item.legacy_extra_time || old_item.projection.n != 3u ||
         old_item.set.function().result_size() != 4u) return 12;
     if (legacy.peek() != std::char_traits<char>::eof()) return 13;
+
+    // Validate length-prefixed skipping: select the second enclosure
+    // without reconstructing the first, as used by replay-range debugging.
+    std::ifstream selected(argv[1], std::ios::binary);
+    if (!selected) return 14;
+    const auto selected_header = SPRE22Capture::read_header(selected);
+    if (selected_header.first != 0u || selected_header.count != 2u) return 15;
+    SPRE22Capture::skip_record(selected, 0u);
+    const auto selected_item = SPRE22Capture::read_record(selected, 1u);
+    if (selected_item.original_index != 1u || selected_item.legacy_extra_time) return 16;
+    if (selected.peek() != std::char_traits<char>::eof()) return 17;
     return 0;
 }

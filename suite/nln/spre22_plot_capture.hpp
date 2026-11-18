@@ -14,12 +14,14 @@
 #include <algorithm>
 #include <bit>
 #include <cmath>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -305,6 +307,19 @@ inline DrawItem read_record(std::istream& in, std::uint64_t expected_index) {
                     ValidatedConstrainedImageSet(domain, mapping, constraints), nmodels != n};
 }
 
+// Skip a validated record without materialising its Taylor models.
+// Record payload includes the 8-byte original index already read here.
+inline void skip_record(std::istream& in, std::uint64_t expected_index) {
+    const auto payload_size = read_uint(in, 8u);
+    if (payload_size < 32u || payload_size > max_record_bytes)
+        throw std::runtime_error("Invalid SPRE22 record size while skipping");
+    const auto original_index = read_uint(in, 8u);
+    if (original_index != expected_index)
+        throw std::runtime_error("Unexpected SPRE22 index while skipping");
+    in.seekg(static_cast<std::streamoff>(payload_size - 8u), std::ios::cur);
+    if (!in) throw std::runtime_error("Failed to skip SPRE22 record");
+}
+
 struct CaptureHeader {
     std::uint64_t first;
     std::uint64_t count;
@@ -388,15 +403,37 @@ class CapturedReach final : public HybridDrawableInterface {
         std::ifstream in(_path, std::ios::binary);
         if (!in) throw std::runtime_error("Cannot open SPRE22 snapshot: " + _path);
         const CaptureHeader header = read_header(in);
-        constexpr SizeType batch_size = 256u;
+        const auto final_index = header.first + header.count;
+        const SizeType first = environment_size("SPRE22_REPLAY_FIRST",
+                                                static_cast<SizeType>(header.first));
+        if (first < header.first || first > final_index)
+            throw std::out_of_range("SPRE22_REPLAY_FIRST is outside the snapshot");
+        const SizeType available = static_cast<SizeType>(final_index - first);
+        const SizeType requested = environment_size("SPRE22_REPLAY_COUNT", available);
+        const SizeType selected = std::min(requested, available);
+        const SizeType batch_size = environment_size("SPRE22_REPLAY_BATCH_SIZE", 256u);
+        if (batch_size == 0u || batch_size > 256u)
+            throw std::out_of_range("SPRE22_REPLAY_BATCH_SIZE must be in [1,256]");
+        const SizeType trace_option = environment_size("SPRE22_REPLAY_TRACE", 0u);
+        if (trace_option > 1u)
+            throw std::out_of_range("SPRE22_REPLAY_TRACE must be 0 or 1");
+        const bool trace = trace_option != 0u;
+        std::mutex trace_mutex;
+
+        // Index directly through length-prefixed records instead of
+        // reconstructing all the enclosures preceding the selected range.
+        for (std::uint64_t index = header.first; index < first; ++index)
+            skip_record(in, index);
+        if (first != header.first)
+            std::cerr << "SPRE22 replay: seeking to enclosure " << first << std::endl;
+
         bool legacy_warning_reported = false;
-        for (std::uint64_t offset = 0; offset < header.count; offset += batch_size) {
-            const SizeType count = static_cast<SizeType>(
-                std::min<std::uint64_t>(batch_size, header.count - offset));
+        for (SizeType offset = 0; offset < selected; offset += batch_size) {
+            const SizeType count = std::min(batch_size, selected - offset);
             std::vector<DrawItem> items;
             items.reserve(count);
             for (SizeType index = 0; index != count; ++index) {
-                const auto absolute = header.first + offset + index;
+                const auto absolute = static_cast<std::uint64_t>(first) + offset + index;
                 try {
                     items.push_back(read_record(in, absolute));
                     if (items.back().legacy_extra_time && !legacy_warning_reported) {
@@ -410,22 +447,38 @@ class CapturedReach final : public HybridDrawableInterface {
                                              std::to_string(absolute) + ": " + e.what());
                 }
             }
-            std::cerr << "SPRE22 replay: drawing [" << (header.first + offset)
-                      << "," << (header.first + offset + count) << ")" << std::endl;
+            std::cerr << "SPRE22 replay: drawing [" << (first + offset)
+                      << "," << (first + offset + count) << ")" << std::endl;
             std::vector<RecordingCanvas> recordings(count);
             StaticWorkload<SizeType> workload([&](const SizeType& index) {
+                const auto absolute = items[index].original_index;
+                const auto began = std::chrono::steady_clock::now();
+                if (trace) {
+                    std::lock_guard<std::mutex> guard(trace_mutex);
+                    std::cerr << "SPRE22 draw BEGIN " << absolute << std::endl;
+                }
                 DrawerManager::instance().drawer().draw(
                     recordings[index], items[index].projection, items[index].set);
+                if (trace) {
+                    const auto elapsed = std::chrono::duration<double>(
+                        std::chrono::steady_clock::now() - began).count();
+                    std::lock_guard<std::mutex> guard(trace_mutex);
+                    std::cerr << "SPRE22 draw END " << absolute
+                              << " (" << elapsed << " s)" << std::endl;
+                }
             });
             for (SizeType index = 0; index != count; ++index) workload.append(index);
             workload.process();
-            std::cerr << "SPRE22 replay: replaying [" << (header.first + offset)
-                      << "," << (header.first + offset + count) << ")" << std::endl;
+            std::cerr << "SPRE22 replay: replaying [" << (first + offset)
+                      << "," << (first + offset + count) << ")" << std::endl;
             for (const auto& recording : recordings) recording.replay(canvas);
         }
-        if (in.peek() != std::char_traits<char>::eof())
-            throw std::runtime_error("Trailing data after SPRE22 snapshot");
-        if (in.bad()) throw std::runtime_error("I/O failure reading SPRE22 snapshot");
+        // Only expect EOF when replaying a range reaching the end of file.
+        if (static_cast<std::uint64_t>(first) + selected == final_index) {
+            if (in.peek() != std::char_traits<char>::eof())
+                throw std::runtime_error("Trailing data after SPRE22 snapshot");
+            if (in.bad()) throw std::runtime_error("I/O failure reading SPRE22 snapshot");
+        }
     }
 
   private:
