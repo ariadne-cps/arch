@@ -25,6 +25,7 @@
 #include "ariadne.hpp"
 #include "utility/stopwatch.hpp"
 #include "arch.hpp"
+#include "spre22_plot_capture.hpp"
 
 namespace Ariadne {
 
@@ -191,12 +192,12 @@ void SPRE22()
 
     RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
 
-    LOGGING_PRINTLN("Plotting...");
-    Stopwatch<Milliseconds> plotting_sw;
-    plot("SPRE20",{-1000<=x<=200,-450<=y<=0},Colour(1.0,0.75,0.5),orbit.reach());
-    plotting_sw.click();
-    LOGGING_PRINTLN("File SPRE20.png written.");
-    LOGGING_PRINTLN("Plotting done in " << plotting_sw.elapsed_seconds() << " seconds.");
+    // Capture the drawing inputs immediately after evolution and property checks.
+    // Do not invoke the (potentially hanging) plot path in the capture run.
+    LOGGING_PRINTLN("Capturing reach enclosures for isolated plotting...");
+    SPRE22Capture::write_header(SPRE22_CAPTURE_HEADER_PATH, orbit.reach(), Variables2d(x,y));
+    LOGGING_PRINTLN("Generated " << SPRE22_CAPTURE_HEADER_PATH);
+    LOGGING_PRINTLN("Configure the build again to enable SPRE22_plot_replay.");
 }
 
 } // namespace Ariadne

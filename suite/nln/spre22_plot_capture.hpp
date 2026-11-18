@@ -28,6 +28,8 @@
 #include "function/taylor_model.hpp"
 #include "hybrid/hybrid_graphics.hpp"
 #include "rendering/rendering_interface.hpp"
+#include "drawing/drawer_manager.hpp"
+#include "drawing/geometry_draw.hpp"
 
 namespace Ariadne::SPRE22Capture {
 
@@ -133,8 +135,8 @@ inline void write_enclosure(std::ostream& out, const HybridEnclosure& enclosure,
         throw std::runtime_error("Non-Taylor drawing function: cannot capture without changing geometry");
     }
     const auto projection = Ariadne::projection(enclosure.state_time_auxiliary_space(), axes);
+    out << "    static void draw_" << index << "(CanvasInterface& canvas) {\n";
     out << "        // Original reach enclosure " << index << "\n";
-    out << "        {\n";
     out << "        const auto domain = ";
     write_domain(out, set.domain());
     out << ";\n";
@@ -148,11 +150,13 @@ inline void write_enclosure(std::ostream& out, const HybridEnclosure& enclosure,
     out << "        const ValidatedVectorMultivariateTaylorFunctionModelDP mapping(domain, models);\n";
     out << "        List<ValidatedConstraint> constraints;\n";
     for (const auto& constraint : set.constraint_models()) {
+        const auto constraint_function = constraint.function();
         const auto* scalar = dynamic_cast<const ValidatedScalarMultivariateTaylorFunctionModelDP*>(
-            &constraint.function().reference());
+            &constraint_function.reference());
         if (!scalar) {
             throw std::runtime_error("Non-Taylor constraint: cannot capture without changing geometry");
         }
+        out << "        {\n";
         out << "        ValidatedTaylorModelDP scalar_model(" << scalar->argument_size()
             << "u, TrivialSweeper<FloatDP>(dp));\n";
         write_model(out, scalar->model(), "scalar_model");
@@ -161,11 +165,12 @@ inline void write_enclosure(std::ostream& out, const HybridEnclosure& enclosure,
         out << ", ValidatedScalarMultivariateTaylorFunctionModelDP(domain, scalar_model), ";
         write_bounds(out, constraint.upper_bound());
         out << "));\n";
+        out << "        }\n";
     }
     out << "        DrawerManager::instance().drawer().draw(canvas, Projection2d("
         << projection.n << "u, " << projection.i << "u, " << projection.j
         << "u), ValidatedConstrainedImageSet(domain, mapping, constraints));\n";
-    out << "        }\n";
+    out << "    }\n";
 }
 
 inline SizeType environment_size(const char* name, SizeType fallback) {
@@ -203,10 +208,14 @@ inline Void write_header(const char* filename, const ListSet<HybridEnclosure>& r
     out << "#include \"drawing/geometry_draw.hpp\"\n";
     out << "#include \"function/taylor_function.hpp\"\n";
     out << "#include \"hybrid/hybrid_graphics.hpp\"\n";
+    out << "#include \"rendering/recording_canvas.hpp\"\n";
+    out << "#include \"threading/workload.hpp\"\n";
+    out << "#include <algorithm>\n";
+    out << "#include <vector>\n";
+    out << "#include <iostream>\n";
     out << "namespace Ariadne {\n";
     out << "class SPRE22CapturedReach final : public HybridDrawableInterface {\n";
-    out << "public:\n";
-    out << "    Void draw(CanvasInterface& canvas, const Set<DiscreteLocation>&, const Variables2d&) const override {\n";
+    out << "private:\n";
     for (SizeType i = start; i != end; ++i) {
         try {
             write_enclosure(out, reach[i], axes, i);
@@ -221,6 +230,26 @@ inline Void write_header(const char* filename, const ListSet<HybridEnclosure>& r
                       << "/" << (end - start) << " enclosures\n";
         }
     }
+    out << "public:\n";
+    out << "    Void draw(CanvasInterface& canvas, const Set<DiscreteLocation>&, const Variables2d&) const override {\n";
+    out << "        using DrawFunction = void (*)(CanvasInterface&);\n";
+    out << "        static const std::vector<DrawFunction> functions = {\n";
+    for (SizeType i = start; i != end; ++i) {
+        out << "            &draw_" << i << ",\n";
+    }
+    out << "        };\n";
+    out << "        constexpr SizeType batch_size = 256u;\n";
+    out << "        for (SizeType offset = 0; offset < functions.size(); offset += batch_size) {\n";
+    out << "            const SizeType count = std::min(batch_size, functions.size() - offset);\n";
+    out << "            std::vector<RecordingCanvas> recordings(count);\n";
+    out << "            StaticWorkload<SizeType> workload([&](const SizeType& index) {\n";
+    out << "                functions[offset + index](recordings[index]);\n";
+    out << "            });\n";
+    out << "            for (SizeType index = 0; index < count; ++index) workload.append(index);\n";
+    out << "            std::cerr << \"SPRE22 replay batch \" << offset << \" - \" << (offset + count) << std::endl;\n";
+    out << "            workload.process();\n";
+    out << "            for (const auto& recording : recordings) recording.replay(canvas);\n";
+    out << "        }\n";
     out << "    }\n";
     out << "};\n";
     out << "} // namespace Ariadne\n";
