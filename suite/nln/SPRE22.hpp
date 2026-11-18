@@ -195,9 +195,9 @@ void SPRE22()
     // Capture the drawing inputs immediately after evolution and property checks.
     // Do not invoke the (potentially hanging) plot path in the capture run.
     LOGGING_PRINTLN("Capturing reach enclosures for isolated plotting...");
-    SPRE22Capture::write_header(SPRE22_CAPTURE_HEADER_PATH, orbit.reach(), Variables2d(x,y));
-    LOGGING_PRINTLN("Generated " << SPRE22_CAPTURE_HEADER_PATH);
-    LOGGING_PRINTLN("Configure the build again to enable SPRE22_plot_replay.");
+    SPRE22Capture::write_binary(SPRE22_CAPTURE_FILE_PATH, orbit.reach(), Variables2d(x,y));
+    LOGGING_PRINTLN("Generated " << SPRE22_CAPTURE_FILE_PATH);
+    LOGGING_PRINTLN("Run SPRE22_plot_replay to draw without recomputing the orbit.");
 }
 
 } // namespace Ariadne

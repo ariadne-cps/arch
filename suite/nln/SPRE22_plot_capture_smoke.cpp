@@ -26,6 +26,15 @@ int main(int argc, const char* argv[]) {
     enclosure.new_activation(activation, coordinates[1]);
     enclosure.new_state_constraint(bounded, ValidatedConstraint(-1, coordinates[0], 1));
     const ListSet<HybridEnclosure> reach(enclosure);
-    SPRE22Capture::write_header(argv[1], reach, Variables2d(x, y));
+    SPRE22Capture::write_binary(argv[1], reach, Variables2d(x, y));
+    std::ifstream in(argv[1], std::ios::binary);
+    if (!in) return 3;
+    const auto header = SPRE22Capture::read_header(in);
+    if (header.first != 0u || header.count != 1u) return 4;
+    const auto item = SPRE22Capture::read_record(in, 0u);
+    if (item.original_index != 0u || item.projection.n != 3u ||
+        item.set.domain().size() != 2u || item.set.constraints().size() != 3u)
+        return 5;
+    if (in.peek() != std::char_traits<char>::eof()) return 6;
     return 0;
 }
