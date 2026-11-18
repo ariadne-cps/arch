@@ -40,5 +40,13 @@ values, a magic string and version, per-record payload lengths and original
 indices, and a strict readback check. NaNs and non-finite coefficients and
 domains are rejected; infinities are permitted only for constraint bounds.
 Unknown sweeper types fail explicitly rather than silently changing geometry.
+The original version-1 writer erroneously emitted an additional time component
+when t was already part of the state variables. The replay reader accepts
+those existing files (mapping size = projection dimension + 1), issues one
+warning, and retains the original x/y projection without re-running evolution.
+New snapshots capture the labelled mapping exactly as the original drawer
+does. The round-trip smoke test checks both variants, including a synthetic
+legacy record.
+
 The binary format is not designed to load untrusted input and cannot reproduce
 issues occurring in `HybridEnclosure` copies before the drawer.

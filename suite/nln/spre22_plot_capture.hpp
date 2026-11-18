@@ -204,12 +204,16 @@ struct DrawItem {
     SizeType original_index;
     Projection2d projection;
     ValidatedConstrainedImageSet set;
+    // A version-1 writer bug added a redundant time component when t was
+    // already a state variable. Preserve old snapshots without re-evolution.
+    bool legacy_extra_time;
 };
 
-inline void write_record(std::ostream& out, const HybridEnclosure& enclosure,
-                         const Variables2d& axes, SizeType index) {
+inline void write_record_with_mapping(
+    std::ostream& out, const HybridEnclosure& enclosure,
+    const Variables2d& axes, SizeType index,
+    const ValidatedVectorMultivariateFunctionPatch& function) {
     const auto& continuous = enclosure.continuous_set();
-    const auto function = continuous.state_time_auxiliary_function();
     const auto* taylor =
         dynamic_cast<const ValidatedVectorMultivariateTaylorFunctionModelDP*>(&function.reference());
     if (!taylor)
@@ -250,6 +254,15 @@ inline void write_record(std::ostream& out, const HybridEnclosure& enclosure,
     if (!out) throw std::runtime_error("Cannot finalize SPRE22 record");
 }
 
+// Use the labelled function, exactly as HybridEnclosure::draw does. Calling
+// continuous_set().state_time_auxiliary_function() loses the state labels and
+// appends an extra time component when the model already has a state named t.
+inline void write_record(std::ostream& out, const HybridEnclosure& enclosure,
+                         const Variables2d& axes, SizeType index) {
+    const auto function = enclosure.state_time_auxiliary_function();
+    write_record_with_mapping(out, enclosure, axes, index, function);
+}
+
 inline DrawItem read_record(std::istream& in, std::uint64_t expected_index) {
     const std::uint64_t payload_size = read_uint(in, 8u);
     if (payload_size < 32u || payload_size > max_record_bytes)
@@ -265,7 +278,11 @@ inline DrawItem read_record(std::istream& in, std::uint64_t expected_index) {
         throw std::runtime_error("Invalid SPRE22 projection");
     const auto domain = read_domain(in);
     const auto nmodels = read_count(in, max_dimension, "mapping components");
-    if (nmodels != n)
+    // Compatibility with existing version-1 captures. The first writer
+    // mistakenly used the unlabelled continuous Enclosure, duplicating the
+    // time output if t was already in the state space. The x/y indices and
+    // constraints are unchanged; retain the extra unprojected component.
+    if (nmodels != n && !(n < max_dimension && nmodels == n + 1u))
         throw std::runtime_error("SPRE22 mapping/projection dimension mismatch");
     const auto dimensions = domain.size();
     Vector<ValidatedTaylorModelDP> models(nmodels, ValidatedTaylorModelDP(
@@ -285,7 +302,7 @@ inline DrawItem read_record(std::istream& in, std::uint64_t expected_index) {
     if (in.tellg() - start != static_cast<std::streamoff>(payload_size))
         throw std::runtime_error("SPRE22 record length mismatch");
     return DrawItem{static_cast<SizeType>(original), Projection2d(n, i, j),
-                    ValidatedConstrainedImageSet(domain, mapping, constraints)};
+                    ValidatedConstrainedImageSet(domain, mapping, constraints), nmodels != n};
 }
 
 struct CaptureHeader {
@@ -372,6 +389,7 @@ class CapturedReach final : public HybridDrawableInterface {
         if (!in) throw std::runtime_error("Cannot open SPRE22 snapshot: " + _path);
         const CaptureHeader header = read_header(in);
         constexpr SizeType batch_size = 256u;
+        bool legacy_warning_reported = false;
         for (std::uint64_t offset = 0; offset < header.count; offset += batch_size) {
             const SizeType count = static_cast<SizeType>(
                 std::min<std::uint64_t>(batch_size, header.count - offset));
@@ -381,6 +399,12 @@ class CapturedReach final : public HybridDrawableInterface {
                 const auto absolute = header.first + offset + index;
                 try {
                     items.push_back(read_record(in, absolute));
+                    if (items.back().legacy_extra_time && !legacy_warning_reported) {
+                        std::cerr << "SPRE22 replay: legacy snapshot contains an extra "
+                                     "unprojected time component; preserving the "
+                                     "original x/y projection" << std::endl;
+                        legacy_warning_reported = true;
+                    }
                 } catch (const std::exception& e) {
                     throw std::runtime_error("Cannot read enclosure " +
                                              std::to_string(absolute) + ": " + e.what());
