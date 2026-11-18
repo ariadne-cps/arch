@@ -33,17 +33,35 @@
 
 namespace Ariadne::SPRE22Capture {
 
-inline void write_double(std::ostream& out, double value) {
+// NaN is rejected everywhere. Infinity is permitted only for the bounds of
+// validated constraints, where it denotes a genuinely unbounded inequality.
+inline void write_double(std::ostream& out, double value, const std::string& context = "numeric value") {
     if (!std::isfinite(value)) {
-        throw std::runtime_error("Non-finite Taylor coefficient or bound cannot be captured");
+        throw std::runtime_error("Cannot capture " + context +
+                                 ": " + (std::isnan(value) ? "NaN" : "infinite"));
     }
     out << std::hexfloat << value << std::defaultfloat;
 }
 
-inline void write_float(std::ostream& out, const FloatDP& value) {
+inline void write_float(std::ostream& out, const FloatDP& value,
+                        const std::string& context = "numeric value") {
     out << "FloatDP(ExactDouble(";
-    write_double(out, value.get_d());
+    write_double(out, value.get_d(), context);
     out << "), dp)";
+}
+
+inline void write_constraint_bound(std::ostream& out, const FloatDP& value,
+                                   const std::string& context) {
+    const double v = value.get_d();
+    if (std::isnan(v)) {
+        throw std::runtime_error("Cannot capture " + context + ": NaN");
+    }
+    if (std::isinf(v)) {
+        out << (std::signbit(v) ? "FloatDP::inf(Sign::NEGATIVE, dp)"
+                                : "FloatDP::inf(Sign::POSITIVE, dp)");
+    } else {
+        write_float(out, value, context);
+    }
 }
 
 inline void write_dyadic(std::ostream& out, const Dyadic& value) {
@@ -60,9 +78,9 @@ inline void write_domain(std::ostream& out, const ExactBoxType& domain) {
     for (SizeType i = 0; i != domain.size(); ++i) {
         if (i != 0u) out << ", ";
         out << "ExactIntervalType(";
-        write_float(out, domain[i].lower_bound());
+        write_float(out, domain[i].lower_bound(), "domain[" + std::to_string(i) + "].lower");
         out << ", ";
-        write_float(out, domain[i].upper_bound());
+        write_float(out, domain[i].upper_bound(), "domain[" + std::to_string(i) + "].upper");
         out << ")";
     }
     out << "}";
@@ -104,22 +122,23 @@ inline void write_model(std::ostream& out, const ValidatedTaylorModelDP& model,
             out << index[k] << "u";
         }
         out << "}), ";
-        write_float(out, iter->coefficient());
+        write_float(out, iter->coefficient(), std::string(variable_name) + " coefficient");
         out << ");\n";
     }
     out << "            " << variable_name << " = ValidatedTaylorModelDP(expansion, FloatDPError(ExactDouble(";
-    write_double(out, model.error().raw().get_d());
+    write_double(out, model.error().raw().get_d(), std::string(variable_name) + " error");
     out << "), dp), ";
     write_sweeper(out, model.sweeper());
     out << ");\n";
     out << "        }\n";
 }
 
-inline void write_bounds(std::ostream& out, const FloatDPBounds& bounds) {
+inline void write_bounds(std::ostream& out, const FloatDPBounds& bounds,
+                         const std::string& context) {
     out << "FloatDPBounds(";
-    write_float(out, bounds.lower_raw());
+    write_constraint_bound(out, bounds.lower_raw(), context + ".lower");
     out << ", ";
-    write_float(out, bounds.upper_raw());
+    write_constraint_bound(out, bounds.upper_raw(), context + ".upper");
     out << ")";
 }
 
@@ -147,6 +166,7 @@ inline void write_enclosure(std::ostream& out, const HybridEnclosure& enclosure,
     }
     out << "        const ValidatedVectorMultivariateTaylorFunctionModelDP mapping(domain, models);\n";
     out << "        List<ValidatedConstraint> constraints;\n";
+    SizeType constraint_index = 0u;
     for (const auto& constraint : set.constraint_models()) {
         const auto constraint_function = constraint.function();
         const auto* scalar = dynamic_cast<const ValidatedScalarMultivariateTaylorFunctionModelDP*>(
@@ -159,11 +179,14 @@ inline void write_enclosure(std::ostream& out, const HybridEnclosure& enclosure,
             << "u, TrivialSweeper<FloatDP>(dp));\n";
         write_model(out, scalar->model(), "scalar_model");
         out << "        constraints.append(ValidatedConstraint(";
-        write_bounds(out, constraint.lower_bound());
+        write_bounds(out, constraint.lower_bound(),
+                     "constraint[" + std::to_string(constraint_index) + "].lower_bound");
         out << ", ValidatedScalarMultivariateTaylorFunctionModelDP(domain, scalar_model), ";
-        write_bounds(out, constraint.upper_bound());
+        write_bounds(out, constraint.upper_bound(),
+                     "constraint[" + std::to_string(constraint_index) + "].upper_bound");
         out << "));\n";
         out << "        }\n";
+        ++constraint_index;
     }
     out << "        DrawerManager::instance().drawer().draw(canvas, Projection2d("
         << projection.n << "u, " << projection.i << "u, " << projection.j

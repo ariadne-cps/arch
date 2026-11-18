@@ -25,3 +25,20 @@ if(EXISTS "${CMAKE_BINARY_DIR}/spre22_plot_data.generated.hpp")
     target_include_directories(SPRE22_plot_replay PRIVATE "${CMAKE_BINARY_DIR}")
     target_link_libraries(SPRE22_plot_replay PRIVATE ariadne)
 endif()
+
+# Build-only smoke check: generate a small representative header containing
+# both one-sided (+/- infinity) and bounded constraints, then compile it.
+# No SPRE22 evolution or plotting is executed by CI.
+add_executable(SPRE22_plot_capture_smoke SPRE22_plot_capture_smoke.cpp)
+target_link_libraries(SPRE22_plot_capture_smoke PRIVATE ariadne)
+set(SPRE22_SMOKE_HEADER "${CMAKE_BINARY_DIR}/spre22_plot_smoke_data.generated.hpp")
+add_custom_command(
+    OUTPUT "${SPRE22_SMOKE_HEADER}"
+    COMMAND $<TARGET_FILE:SPRE22_plot_capture_smoke> "${SPRE22_SMOKE_HEADER}"
+    DEPENDS SPRE22_plot_capture_smoke
+    COMMENT "Generating SPRE22 constrained-image capture smoke fixture"
+    VERBATIM
+)
+add_executable(SPRE22_plot_replay_smoke SPRE22_plot_replay_smoke.cpp "${SPRE22_SMOKE_HEADER}")
+target_include_directories(SPRE22_plot_replay_smoke PRIVATE "${CMAKE_BINARY_DIR}")
+target_link_libraries(SPRE22_plot_replay_smoke PRIVATE ariadne)

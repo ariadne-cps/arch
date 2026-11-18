@@ -49,3 +49,13 @@ behavior. The output is `SPRE22_replay.png`.
 
 The generator intentionally fails on unsupported function-model or
 sweeper types instead of silently substituting approximate geometry.
+
+## Compile-time smoke test
+
+The normal CMake build also creates a small synthetic `HybridEnclosure` with
+bounded and one-sided (infinite) constraints, runs the capture generator, and
+compiles and links the emitted C++ header through `SPRE22_plot_replay_smoke`.
+No real evolution or plotting occurs during this smoke check. This ensures
+that the code generation round trip is checked by macOS/Linux/Windows CI
+before another full SPRE22 run. It is not a test of the size or performance of
+the full snapshot.
