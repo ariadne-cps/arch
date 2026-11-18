@@ -192,8 +192,11 @@ void SPRE22()
     RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
 
     LOGGING_PRINTLN("Plotting...");
+    Stopwatch<Milliseconds> plotting_sw;
     plot("SPRE20",{-1000<=x<=200,-450<=y<=0},Colour(1.0,0.75,0.5),orbit.reach());
+    plotting_sw.click();
     LOGGING_PRINTLN("File SPRE20.png written.");
+    LOGGING_PRINTLN("Plotting done in " << plotting_sw.elapsed_seconds() << " seconds.");
 }
 
 } // namespace Ariadne
