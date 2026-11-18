@@ -86,8 +86,6 @@ inline void write_sweeper(std::ostream& out, const Sweeper<FloatDP>& sweeper) {
         out << ")";
     } else if (dynamic_cast<const TrivialSweeper<FloatDP>*>(&impl)) {
         out << "TrivialSweeper<FloatDP>(dp)";
-    } else if (dynamic_cast<const NullSweeper<FloatDP>*>(&impl)) {
-        out << "NullSweeper<FloatDP>(dp)";
     } else {
         throw std::runtime_error("Unsupported Taylor sweeper: refusing a non-faithful snapshot");
     }
