@@ -184,9 +184,18 @@ void SPRE22()
 
     LOGGING_PRINTLN("Checking properties...");
     const Nat num_possible_violations = check_space_rendezvous_properties(orbit, safe_set);
-    if (num_possible_violations>0) LOGGING_PRINTLN("Number of possible safety violations: " << num_possible_violations);
+    if (num_possible_violations>0) {
+        LOGGING_PRINTLN("Number of possible safety violations: " << num_possible_violations);
+        instance.set_verified(0);
+    } else {
+        instance.set_verified(1);
+    }
 
     sw.click();
+
+    instance.set_execution_time(sw.elapsed_seconds());
+    instance.write();
+    
     LOGGING_PRINTLN("Done in " << sw.elapsed_seconds() << " seconds.");
 
     RealVariable t("t"), x("x"), y("y"), vx("vx"), vy("vy");
