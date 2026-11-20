@@ -51,13 +51,14 @@ void CVDP23()
     GradedTaylorSeriesIntegrator integrator(max_err);
 
     VectorFieldEvolver evolver(dynamics, integrator);
-    evolver.configuration().set_maximum_enclosure_radius(0.08);
+    evolver.configuration().set_maximum_enclosure_radius(0.32);
     evolver.configuration().set_maximum_step_size(0.02);
     evolver.configuration().set_maximum_spacial_error(1e-5);
+    evolver.configuration().set_enable_subdivisions(false);
 
     RealVariablesBox initial_set({1.25_dec<=x1<=1.55_dec,2.35_dec<=y1<=2.45_dec,1.25_dec<=x2<=1.55_dec,2.35_dec<=y2<=2.45_dec,1<=b<=3});
 
-    Real evolution_time(3);
+    Real evolution_time(7.0_x);
 
     Stopwatch<Milliseconds> sw;
 
