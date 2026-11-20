@@ -46,14 +46,14 @@ void CVDP23()
     RealConstant mu("mu",1.0_dec);
     VectorField dynamics({dot(x1)=y1, dot(y1)=mu*(1-sqr(x1))*y1+b*(x2-x1)-x1, dot(x2)=y2, dot(y2)=mu*(1-sqr(x2))*y2-b*(x2-x1)-x2, dot(b)=0});
 
-    StepMaximumError max_err = 2e-7;
+    StepMaximumError max_err = 1e-7;
     //TaylorPicardIntegrator integrator(max_err);
-    GradedTaylorSeriesIntegrator integrator(max_err);
+    PreconditionedGradedTaylorSeriesIntegrator integrator(max_err);
 
     VectorFieldEvolver evolver(dynamics, integrator);
     evolver.configuration().set_maximum_enclosure_radius(0.08);
     evolver.configuration().set_maximum_step_size(0.02);
-    evolver.configuration().set_maximum_spacial_error(1e-5);
+    evolver.configuration().set_maximum_spacial_error(2e-6);
     evolver.configuration().set_enable_subdivisions(false);
 
 
