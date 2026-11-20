@@ -30,13 +30,6 @@ void CVDP23()
 {
     ArchBenchmark benchmark("CVDP23");
 
-    //auto instance = benchmark.create_instance();
-    //instance.write();
-
-    // Results can't be obtained in a reasonable time yet for this benchmark.
-    //return;
-
-
     RealVariable x1("x1"), y1("y1"), x2("x2"), y2("y2"), b("b");
 
     LabelledFigure fig(Axes2d(-2.5, x1, 2.5, -4.05, y1, 4.05));
@@ -47,7 +40,6 @@ void CVDP23()
     VectorField dynamics({dot(x1)=y1, dot(y1)=mu*(1-sqr(x1))*y1+b*(x2-x1)-x1, dot(x2)=y2, dot(y2)=mu*(1-sqr(x2))*y2-b*(x2-x1)-x2, dot(b)=0});
 
     StepMaximumError max_err = 1e-7;
-    //TaylorPicardIntegrator integrator(max_err);
     PreconditionedGradedTaylorSeriesIntegrator integrator(max_err);
 
     VectorFieldEvolver evolver(dynamics, integrator);
